@@ -49,7 +49,8 @@ export default class QrScanner {
         canvasSizeOrOnDecodeError = this._onDecodeError,
         canvasSizeOrCalculateScanRegion = this._calculateScanRegion,
         preferredFacingMode = 'environment',
-        deviceId = null
+        deviceId = null,
+        fps = 12
     ) {
         this.$video = video;
         this.$canvas = document.createElement('canvas');
@@ -60,6 +61,12 @@ export default class QrScanner {
         this._active = false;
         this._paused = false;
         this._flashOn = false;
+        this._scanMeta = {
+            fpsInterval: 1000 / fps,
+            now: undefined,
+            then: window.performance.now(),
+            elapsed: 0
+        };
 
         if (typeof canvasSizeOrOnDecodeError === 'number') {
             // legacy function signature where the third argument is the canvas size
@@ -390,18 +397,29 @@ export default class QrScanner {
         };
     }
 
-    _scanFrame() {
-        if (!this._active || this.$video.paused || this.$video.ended) return false;
-        // using requestAnimationFrame to avoid scanning if tab is in background
-        requestAnimationFrame(() => {
-            if (this.$video.readyState <= 1) {
-                // Skip scans until the video is ready as drawImage() only works correctly on a video with readyState
-                // > 1, see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage#Notes.
-                // This also avoids false positives for videos paused after a successful scan which remains visible on
-                // the canvas until the video is started again and ready.
-                this._scanFrame();
-                return;
-            }
+    _scanFrame(newtime) {
+        if (!this._active || this.$video.paused || this.$video.ended) 
+            return false;
+
+        if (this.$video.readyState <= 1) {
+            // Skip scans until the video is ready as drawImage() only works correctly on a video with readyState
+            // > 1, see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage#Notes.
+            // This also avoids false positives for videos paused after a successful scan which remains visible on
+            // the canvas until the video is started again and ready.
+            this._scanFrame();
+            return;
+        }            
+
+        requestAnimationFrame(this._scanFrame);
+
+        this._scanMeta.now = newtime;
+        this._scanMeta.elapsed = this._scanMeta.now - this._scanMeta.then;
+
+        if (this._scanMeta.elapsed > this._scanMeta.fpsInterval) {
+            this._scanMeta.then = this._scanMeta.now - (this._scanMeta.elapsed % this._scanMeta.fpsInterval);
+
+            console.log("scanning", this._scanMeta.now);
+
             this._qrEnginePromise
                 .then((qrEngine) => QrScanner.scanImage(this.$video, this._scanRegion, qrEngine, this.$canvas))
                 .then(this._onDecode, (error) => {
@@ -412,9 +430,8 @@ export default class QrScanner {
                         this._qrEnginePromise = QrScanner.createQrEngine();
                     }
                     this._onDecodeError(error);
-                })
-                .then(() => this._scanFrame());
-        });
+                });
+        }
     }
 
     _onDecodeError(error) {
