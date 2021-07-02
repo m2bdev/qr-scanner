@@ -17,6 +17,8 @@ declare class QrScanner {
         onDecodeError?: (error: string) => void,
         calculateScanRegion?: (video: HTMLVideoElement) => QrScanner.ScanRegion,
         preferredFacingMode?: 'environment' | 'user',
+        deviceId: string = null,
+        fps: number = 12
     );
     /** @deprecated */
     constructor(
@@ -25,6 +27,8 @@ declare class QrScanner {
         onDecodeError?: (error: string) => void,
         canvasSize?: number,
         preferredFacingMode?: 'environment' | 'user',
+        deviceId: string = null,
+        fps: number = 12
     );
     /** @deprecated */
     constructor(video: HTMLVideoElement, onDecode: (result: string) => void, canvasSize?: number);
