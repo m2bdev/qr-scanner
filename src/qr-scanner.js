@@ -399,16 +399,7 @@ export default class QrScanner {
 
     _scanFrame(newtime) {
         if (!this._active || this.$video.paused || this.$video.ended) 
-            return false;
-
-        if (this.$video.readyState <= 1) {
-            // Skip scans until the video is ready as drawImage() only works correctly on a video with readyState
-            // > 1, see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage#Notes.
-            // This also avoids false positives for videos paused after a successful scan which remains visible on
-            // the canvas until the video is started again and ready.
-            this._scanFrame();
             return;
-        }            
 
         requestAnimationFrame(this._scanFrame);
 
@@ -419,6 +410,14 @@ export default class QrScanner {
             this._scanMeta.then = this._scanMeta.now - (this._scanMeta.elapsed % this._scanMeta.fpsInterval);
 
             console.log("scanning", this._scanMeta.now);
+
+            if (this.$video.readyState <= 1) {
+                // Skip scans until the video is ready as drawImage() only works correctly on a video with readyState
+                // > 1, see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage#Notes.
+                // This also avoids false positives for videos paused after a successful scan which remains visible on
+                // the canvas until the video is started again and ready.
+                return;
+            }
 
             this._qrEnginePromise
                 .then((qrEngine) => QrScanner.scanImage(this.$video, this._scanRegion, qrEngine, this.$canvas))
