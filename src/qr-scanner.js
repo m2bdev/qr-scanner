@@ -409,8 +409,6 @@ export default class QrScanner {
         if (this._scanMeta.elapsed > this._scanMeta.fpsInterval) {
             this._scanMeta.then = this._scanMeta.now - (this._scanMeta.elapsed % this._scanMeta.fpsInterval);
 
-            console.log("scanning", this._scanMeta.now);
-
             if (this.$video.readyState <= 1) {
                 // Skip scans until the video is ready as drawImage() only works correctly on a video with readyState
                 // > 1, see https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/drawImage#Notes.
