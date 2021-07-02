@@ -401,7 +401,7 @@ export default class QrScanner {
         if (!this._active || this.$video.paused || this.$video.ended) 
             return;
 
-        requestAnimationFrame(this._scanFrame);
+        requestAnimationFrame(this._scanFrame.bind(this));
 
         this._scanMeta.now = newtime;
         this._scanMeta.elapsed = this._scanMeta.now - this._scanMeta.then;
